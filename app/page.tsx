@@ -13,8 +13,9 @@ export default function Home() {
   const [preview, setPreview] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
-  const [utr, setUtr] = useState(''); // New functionality: Transaction ID
+  const [utr, setUtr] = useState('');
   const [selectedTier, setSelectedTier] = useState<'free' | 'standard' | 'premium' | 'subscription'>('standard');
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
 
@@ -47,20 +48,52 @@ export default function Home() {
       alert('कृपया अपनी हथेली की फोटो और सभी डिटेल्स भरें');
       return;
     }
-    
-    // Logic for paid tiers
+
+    // GATING LOGIC: Require UTR for paid tiers
     if (tiers[selectedTier].price > 0 && !utr) {
-      alert('कृपया पेमेंट के बाद UTR (Transaction ID) भरें ताकि हम आपकी पेमेंट verify कर सकें।');
+      alert('Paid Report के लिए कृपया पेमेंट करें और 12-digit UTR नंबर भरें।');
       return;
     }
 
     setIsLoading(true);
-    // Here you would call your /api/analyze-palm route
-    setTimeout(() => {
+
+    // In a real production app, you would POST this to your /api/analyze-palm
+    // and save the status as 'PENDING_VERIFICATION' in a database.
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      setIsSubmitted(true);
+    } catch (error) {
+      alert('Something went wrong. Please try again.');
+    } finally {
       setIsLoading(false);
-      alert('धन्यवाद! आपकी डिटेल्स मिल गई हैं। हम जल्द ही WhatsApp पर आपकी हस्त रेखा रिपोर्ट भेजेंगे।');
-    }, 2000);
+    }
   };
+
+  if (isSubmitted) {
+    return (
+      <div className="min-h-screen bg-rose-50 flex items-center justify-center p-6 text-center">
+        <div className="bg-white p-10 rounded-3xl shadow-2xl max-w-md">
+          <div className="text-6xl mb-6">⏳</div>
+          <h2 className="text-3xl font-bold mb-4 text-gray-900">Request Received!</h2>
+          <p className="text-gray-600 mb-6">
+            धन्यवाद, <b>{email}</b>! <br /><br />
+            {tiers[selectedTier].price > 0 ? (
+              `हमने आपका पेमेंट UTR (${utr}) रिसीव कर लिया है। वेरिफिकेशन के बाद 2-4 घंटों में आपकी Detailed Report WhatsApp पर भेज दी जाएगी।`
+            ) : (
+              "आपकी फ्री रिपोर्ट प्रोसेस हो रही है। कृपया ईमेल चेक करें।"
+            )}
+          </p>
+          <button 
+            onClick={() => setIsSubmitted(false)}
+            className="text-rose-600 font-semibold hover:underline"
+          >
+            ← वापस जाएं
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 to-rose-50 font-sans text-gray-900">
@@ -71,134 +104,107 @@ export default function Home() {
             <div className="w-10 h-10 bg-gradient-to-br from-rose-600 to-pink-600 rounded-xl flex items-center justify-center text-white text-2xl">✋</div>
             <h1 className="text-2xl font-bold tracking-tight">HastRekha Expert</h1>
           </div>
-          <div className="hidden md:block text-sm font-medium text-rose-600 bg-rose-50 px-4 py-2 rounded-full">
-            ✨ 12,000+ संतुष्ट महिलाएं
+          <div className="text-sm font-medium text-rose-600 bg-rose-50 px-4 py-2 rounded-full">
+            Verified AI Astrologer
           </div>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-6 py-12">
-        {/* Hero Section */}
-        <div className="text-center mb-16">
-          <h2 className="text-4xl md:text-6xl font-extrabold leading-tight mb-4">
-            हथेली में छिपे <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-pink-600">भविष्य के राज</span> जानें
+        <div className="text-center mb-12">
+          <h2 className="text-4xl md:text-5xl font-extrabold mb-4">
+            सटीक <span className="text-rose-600">हस्त रेखा</span> विश्लेषण
           </h2>
-          <p className="text-lg text-gray-600">Love • शादी • Career • सेहत का सटीक विश्लेषण</p>
+          <p className="text-gray-600">Professional Palmistry by Abhishek Singh</p>
         </div>
 
-        {/* Dynamic Testimonial Banner */}
-        <div className="bg-white border border-rose-100 rounded-2xl p-6 mb-16 shadow-sm max-w-3xl mx-auto">
-          <div className="flex items-center gap-4 transition-opacity duration-500">
-            <div className="bg-rose-100 text-rose-600 w-12 h-12 rounded-full flex items-center justify-center font-bold">
-              {testimonials[currentTestimonial].name[0]}
-            </div>
-            <div>
-              <p className="italic text-gray-700">"{testimonials[currentTestimonial].text}"</p>
-              <p className="text-xs font-bold text-gray-500 mt-1">— {testimonials[currentTestimonial].name}, {testimonials[currentTestimonial].location}</p>
-            </div>
-          </div>
+        {/* Testimonial Ticker */}
+        <div className="max-w-2xl mx-auto mb-12 h-24 flex items-center justify-center bg-white/50 rounded-2xl border border-rose-100 px-6 text-center italic text-gray-700">
+           "{testimonials[currentTestimonial].text}"
         </div>
 
-        {/* Tiers Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-16">
+        {/* Pricing Tiers */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12">
           {Object.entries(tiers).map(([key, tier]) => (
-            <div 
+            <button 
               key={key}
               onClick={() => setSelectedTier(key as any)}
-              className={`relative bg-white rounded-3xl p-6 cursor-pointer transition-all border-2 ${selectedTier === key ? 'border-rose-500 shadow-xl scale-105 z-10' : 'border-transparent hover:border-rose-200'}`}
+              className={`p-6 rounded-3xl border-2 transition-all text-left ${selectedTier === key ? 'border-rose-500 bg-white shadow-lg scale-105' : 'border-transparent bg-white/40'}`}
             >
-              <h3 className="font-bold text-lg mb-1">{tier.name}</h3>
-              <p className="text-3xl font-black text-rose-600 mb-4">₹{tier.price}</p>
-              <ul className="text-xs space-y-2 text-gray-600">
-                <li className="flex items-center gap-2">✅ {tier.hindi}</li>
-                <li className="flex items-center gap-2">✅ {tier.benefit}</li>
-              </ul>
-            </div>
+              <h3 className="font-bold text-lg">{tier.name}</h3>
+              <p className="text-2xl font-black text-rose-600">₹{tier.price}</p>
+              <p className="text-xs mt-2 text-gray-500">{tier.benefit}</p>
+            </button>
           ))}
         </div>
 
-        {/* Main Action Card */}
-        <div className="max-w-4xl mx-auto grid md:grid-cols-2 gap-8 items-start">
-          
-          {/* Form Side */}
-          <div className="bg-white rounded-3xl shadow-2xl p-8 border border-gray-100">
-            <h3 className="text-2xl font-bold mb-6">1. फोटो और डिटेल्स भरें</h3>
+        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
+          {/* Step 1: Upload */}
+          <div className="bg-white p-8 rounded-3xl shadow-xl border border-rose-50">
+            <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+              <span className="bg-rose-600 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm">1</span>
+              डिटेल्स और फोटो
+            </h3>
             
-            {preview ? (
-              <div className="mb-6 rounded-2xl overflow-hidden border-4 border-rose-100">
-                <img src={preview} alt="Palm Preview" className="w-full h-48 object-cover" />
-                <button onClick={() => setPreview(null)} className="w-full py-2 bg-gray-100 text-xs text-gray-500">फोटो बदलें</button>
-              </div>
-            ) : (
-              <label className="block mb-6 group">
-                <div className="border-2 border-dashed border-rose-200 group-hover:border-rose-400 rounded-2xl p-8 text-center cursor-pointer transition-colors bg-rose-50/30">
-                  <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
-                  <span className="text-4xl mb-2 block">✋</span>
-                  <p className="text-sm font-medium">दाहिने हाथ की फोटो अपलोड करें</p>
-                </div>
-              </label>
-            )}
-
-            <div className="space-y-4 mb-6">
-              <input 
-                type="email" placeholder="Email Address" value={email} 
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-rose-500 outline-none"
-              />
-              <input 
-                type="tel" placeholder="WhatsApp Number" value={whatsapp} 
-                onChange={(e) => setWhatsapp(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-rose-500 outline-none"
-              />
-            </div>
-
-            <button
-              onClick={handleSubmit}
-              disabled={isLoading}
-              className="w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-4 rounded-xl shadow-lg shadow-rose-200 transition-all active:scale-95 disabled:opacity-50"
-            >
-              {isLoading ? 'Wait...' : 'एनालिसिस शुरू करें'}
-            </button>
-          </div>
-
-          {/* Payment Side */}
-          <div className="bg-white rounded-3xl shadow-2xl p-8 border border-green-100 bg-green-50/20">
-            <h3 className="text-2xl font-bold mb-6 text-green-800">2. पेमेंट (UPI)</h3>
-            <p className="text-sm text-gray-600 mb-6">नीचे दिए QR को स्कैन करें और ₹{tiers[selectedTier].price} भेजें।</p>
-            
-            <div className="bg-white p-4 rounded-2xl shadow-inner mb-6 mx-auto w-56 h-56 flex items-center justify-center border-2 border-green-100">
-              <img 
-                src="qr.jpg" 
-                alt="UPI QR Code" 
-                className="w-full h-full object-contain"
-              />
-            </div>
-
             <div className="space-y-4">
-              <div className="text-center">
-                <p className="text-xs uppercase tracking-widest text-gray-400 font-bold">UPI ID</p>
-                <p className="font-mono text-green-700 font-bold">abhisheks529@icici</p>
-              </div>
+              <label className="block border-2 border-dashed border-rose-200 rounded-2xl p-6 text-center cursor-pointer hover:bg-rose-50 transition-colors">
+                <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+                {preview ? (
+                  <img src={preview} alt="Preview" className="h-32 mx-auto rounded-lg object-cover" />
+                ) : (
+                  <div className="text-gray-400">
+                    <p className="text-3xl mb-1">📸</p>
+                    <p className="text-sm">हथेली की फोटो चुनें</p>
+                  </div>
+                )}
+              </label>
 
               <input 
-                type="text" 
-                placeholder="Transaction ID / UTR भरें" 
-                value={utr}
-                onChange={(e) => setUtr(e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-green-200 focus:ring-2 focus:ring-green-500 outline-none bg-white"
+                type="email" placeholder="Email Address" 
+                className="w-full p-4 rounded-xl border border-gray-100 bg-gray-50 outline-none focus:ring-2 focus:ring-rose-400"
+                value={email} onChange={(e) => setEmail(e.target.value)}
               />
-              <p className="text-[10px] text-gray-500 text-center italic">पेमेंट के बाद स्क्रीनशॉट WhatsApp (917838429605) पर भेजें</p>
+              <input 
+                type="tel" placeholder="WhatsApp Number" 
+                className="w-full p-4 rounded-xl border border-gray-100 bg-gray-50 outline-none focus:ring-2 focus:ring-rose-400"
+                value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)}
+              />
             </div>
           </div>
 
+          {/* Step 2: Payment */}
+          <div className="bg-white p-8 rounded-3xl shadow-xl border border-green-50">
+            <h3 className="text-xl font-bold mb-6 flex items-center gap-2 text-green-700">
+              <span className="bg-green-600 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm">2</span>
+              सुरक्षित पेमेंट (UPI)
+            </h3>
+
+            <div className="text-center">
+              <div className="bg-gray-50 p-4 rounded-2xl inline-block mb-4 border border-green-100">
+                <img src="/qr.jpg" alt="Payment QR" className="w-48 h-48 object-contain" />
+              </div>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">UPI ID</p>
+              <p className="text-lg font-mono font-bold text-green-800 mb-6">abhisheks529@icici</p>
+              
+              <input 
+                type="text" placeholder="Enter Transaction UTR (12 digits)" 
+                className="w-full p-4 rounded-xl border border-green-200 bg-green-50/30 outline-none focus:ring-2 focus:ring-green-400 mb-4 font-mono"
+                value={utr} onChange={(e) => setUtr(e.target.value)}
+              />
+              
+              <button 
+                onClick={handleSubmit} disabled={isLoading}
+                className="w-full py-4 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-lg shadow-lg shadow-rose-200 transition-transform active:scale-95 disabled:opacity-50"
+              >
+                {isLoading ? "Verifying..." : "रिपोर्ट के लिए सबमिट करें"}
+              </button>
+            </div>
+          </div>
         </div>
       </main>
 
-      <footer className="mt-20 border-t border-gray-200 bg-white py-12">
-        <div className="max-w-6xl mx-auto px-6 text-center text-gray-500 text-sm">
-          <p className="mb-2">HastRekha Expert © 2026 • उत्तर भारत के लिए विशेष</p>
-          <p>यह सेवा केवल मनोरंजन और मार्गदर्शन के लिए है।</p>
-        </div>
+      <footer className="py-10 text-center text-gray-400 text-xs">
+         HastRekha Expert © 2026 • Verified Professional Service
       </footer>
     </div>
   );
