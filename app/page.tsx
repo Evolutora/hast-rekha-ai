@@ -3,12 +3,6 @@
 
 import { useState, useEffect } from 'react';
 
-declare global {
-  interface Window {
-    Razorpay: any;
-  }
-}
-
 const testimonials = [
   { name: "Priya Sharma", location: "Lucknow, UP", text: "शादी के बारे में जो prediction था, वो बिल्कुल सही निकला। बहुत clarity मिली।", rating: 5 },
   { name: "Neha Gupta", location: "Kanpur, UP", text: "₹51 वाला package लेने के बाद gemstone suggestion ने सच में फर्क डाला।", rating: 5 },
@@ -33,9 +27,9 @@ export default function Home() {
 
   const tiers = {
     free: { price: 0, name: "Free Overview", hindi: "मुफ्त ओवरव्यू", benefit: "बेसिक लाइन्स का सारांश" },
-    standard: { price: 21, name: "Detailed Report", hindi: "विस्तृत रिपोर्ट", benefit: "4 मुख्य रेखाओं का पूरा विश्लेषण + Love, Career, Marriage की जानकारी" },
-    premium: { price: 51, name: "Premium Report", hindi: "प्रीमियम रिपोर्ट", benefit: "Gemstone सलाह + शादी और प्रेम संबंधी विस्तृत भविष्यवाणी" },
-    subscription: { price: 121, name: "Monthly Membership", hindi: "मासिक सदस्यता", benefit: "हर महीने 5 लोगों तक Detailed Report" }
+    standard: { price: 21, name: "Detailed Report", hindi: "विस्तृत रिपोर्ट", benefit: "4 मुख्य रेखाओं का पूरा विश्लेषण" },
+    premium: { price: 51, name: "Premium Report", hindi: "प्रीमियम रिपोर्ट", benefit: "Gemstone सलाह + शादी की भविष्यवाणी" },
+    subscription: { price: 121, name: "Monthly Membership", hindi: "मासिक सदस्यता", benefit: "हर महीने 5 रिपोर्ट्स" }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,7 +42,7 @@ export default function Home() {
     }
   };
 
-  const handlePayment = async () => {
+  const handleSubmit = async () => {
     if (!selectedFile) {
       alert('कृपया अपनी हथेली की फोटो अपलोड करें');
       return;
@@ -60,95 +54,11 @@ export default function Home() {
 
     setIsLoading(true);
 
-    if (selectedTier === 'free') {
-      // Free tier - direct AI call
-      try {
-        const analyzeRes = await fetch('/api/analyze-palm', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            imageUrl: preview,
-            email: email,
-            whatsapp: whatsapp,
-            tier: 'free'
-          }),
-        });
+    const tierInfo = tiers[selectedTier];
 
-        const analyzeData = await analyzeRes.json();
+    alert(`✅ आपने ${tierInfo.name} चुना है (₹${tierInfo.price})\n\nकृपया ₹${tierInfo.price} इस UPI QR को स्कैन करके भेजें।\n\nभेजने के बाद स्क्रीनशॉट लेकर WhatsApp पर भेज दें। हम जल्द ही रिपोर्ट भेज देंगे।`);
 
-        if (analyzeData.success) {
-          alert('🎉 आपकी Free Overview रिपोर्ट ईमेल पर भेज दी गई है!');
-        } else {
-          alert('रिपोर्ट बनाने में समस्या हुई।');
-        }
-      } catch (error) {
-        alert('AI विश्लेषण में समस्या हुई');
-      } finally {
-        setIsLoading(false);
-      }
-      return;
-    }
-
-    // Paid tiers
-    try {
-      const amount = tiers[selectedTier].price * 100;
-
-      const res = await fetch('/api/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount }),
-      });
-
-      const data = await res.json();
-
-      if (!data.success || !data.orderId) {
-        alert('पेमेंट ऑर्डर बनाने में समस्या हुई।');
-        setIsLoading(false);
-        return;
-      }
-
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: amount,
-        currency: "INR",
-        name: "HastRekha Expert",
-        description: tiers[selectedTier].name,
-        order_id: data.orderId,
-        handler: async function (response: any) {
-          alert('✅ पेमेंट सफल! रिपोर्ट तैयार हो रही है...');
-
-          try {
-            const analyzeRes = await fetch('/api/analyze-palm', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                imageUrl: preview,
-                email,
-                whatsapp,
-                tier: selectedTier
-              }),
-            });
-
-            const analyzeData = await analyzeRes.json();
-
-            if (analyzeData.success) {
-              alert(`🎉 आपकी ${tiers[selectedTier].name} ईमेल पर भेज दी गई है!`);
-            }
-          } catch (error) {
-            alert('AI विश्लेषण में समस्या हुई');
-          }
-        },
-        prefill: { email, contact: whatsapp },
-        theme: { color: "#e11d48" },
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-    } catch (error) {
-      alert('कुछ गलत हुआ। कृपया दोबारा प्रयास करें।');
-    } finally {
-      setIsLoading(false);
-    }
+    setIsLoading(false);
   };
 
   return (
@@ -175,17 +85,18 @@ export default function Home() {
           <p className="text-xl text-gray-600">Love • शादी • Career • भविष्य</p>
         </div>
 
-        {/* Pricing Tiers */}
+        {/* Tiers */}
         <div className="grid md:grid-cols-4 gap-6 mb-20">
           {Object.entries(tiers).map(([key, tier]) => (
             <div 
               key={key}
               onClick={() => setSelectedTier(key as any)}
-              className={`bg-white rounded-3xl p-8 cursor-pointer transition-all border ${selectedTier === key ? 'border-rose-600 shadow-xl scale-105' : 'border-gray-200 hover:border-rose-300'}`}
+              className={`bg-white rounded-3xl p-8 cursor-pointer transition-all border ${selectedTier === key ? 'border-rose-600 shadow-xl' : 'border-gray-200 hover:border-rose-300'}`}
             >
-              <h3 className="text-xl font-semibold mb-1">{tier.name}</h3>
+              <h3 className="text-xl font-semibold mb-2">{tier.name}</h3>
               <p className="text-4xl font-bold text-rose-600 mb-6">₹{tier.price}</p>
-              <p className="text-sm text-gray-600 mb-8">{tier.hindi}</p>
+              <p className="text-sm text-gray-600">{tier.hindi}</p>
+              <p className="text-xs text-gray-500 mt-4">{tier.benefit}</p>
             </div>
           ))}
         </div>
@@ -230,12 +141,29 @@ export default function Home() {
           </div>
 
           <button
-            onClick={handlePayment}
+            onClick={handleSubmit}
             disabled={!selectedFile || !email || !whatsapp || isLoading}
             className="w-full bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white font-semibold py-5 rounded-2xl text-lg transition-all disabled:opacity-50"
           >
             {isLoading ? 'प्रोसेस हो रहा है...' : `${tiers[selectedTier].name} लें - ₹${tiers[selectedTier].price}`}
           </button>
+
+          {/* UPI QR Code Section */}
+          <div className="mt-10 p-8 border border-dashed border-green-400 bg-green-50 rounded-3xl text-center">
+            <h4 className="font-semibold text-green-700 mb-4">या UPI से पेमेंट करें</h4>
+            <p className="text-sm mb-6">नीचे दिए QR को स्कैन करके ₹{tiers[selectedTier].price} भेजें</p>
+            
+            <div className="mx-auto mb-6 w-64 h-64 bg-white p-4 rounded-2xl shadow-inner">
+              <img 
+                src="https://files.oaiusercontent.com/file-VvN8vN8vN8vN8vN8vN8vN8vN?se=2026-04-30T00%3A00%3A00Z&sp=r&sv=2024-08-04&sr=b&rscc=max-age%3D31536000%2C%20immutable&rscd=attachment%3B%20filename%3Dphoto_6312291453748581112_x%20%281%29.jpg" 
+                alt="UPI QR Code" 
+                className="w-full h-full object-contain"
+              />
+            </div>
+
+            <p className="font-mono text-lg font-medium text-green-800 mb-2">abhisheks529@icici</p>
+            <p className="text-xs text-gray-600">भेजने के बाद स्क्रीनशॉट लेकर WhatsApp पर भेज दें। हम 10-15 मिनट में रिपोर्ट भेज देंगे।</p>
+          </div>
         </div>
       </main>
 
