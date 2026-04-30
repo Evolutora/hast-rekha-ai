@@ -52,13 +52,10 @@ export default function Home() {
       return;
     }
 
-    setIsLoading(true);
-
     const tierInfo = tiers[selectedTier];
+    const amount = tierInfo.price;
 
-    alert(`✅ आपने ${tierInfo.name} चुना है (₹${tierInfo.price})\n\nकृपया ₹${tierInfo.price} इस UPI QR को स्कैन करके भेजें।\n\nभेजने के बाद स्क्रीनशॉट लेकर WhatsApp पर भेज दें। हम जल्द ही रिपोर्ट भेज देंगे।`);
-
-    setIsLoading(false);
+    alert(`✅ आपने ${tierInfo.name} चुना है (₹${amount})\n\nकृपया ₹${amount} इस UPI QR को स्कैन करके भेजें।\n\nPhone: 917838429605\n\nभेजने के बाद स्क्रीनशॉट लेकर WhatsApp पर भेज दें। हम जल्दी रिपोर्ट भेज देंगे।`);
   };
 
   return (
@@ -143,15 +140,15 @@ export default function Home() {
           <button
             onClick={handleSubmit}
             disabled={!selectedFile || !email || !whatsapp || isLoading}
-            className="w-full bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white font-semibold py-5 rounded-2xl text-lg transition-all disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white font-semibold py-5 rounded-2xl text-lg transition-all disabled:opacity-50 mb-6"
           >
             {isLoading ? 'प्रोसेस हो रहा है...' : `${tiers[selectedTier].name} लें - ₹${tiers[selectedTier].price}`}
           </button>
 
           {/* UPI QR Code Section */}
-          <div className="mt-10 p-8 border border-dashed border-green-400 bg-green-50 rounded-3xl text-center">
-            <h4 className="font-semibold text-green-700 mb-4">या UPI से पेमेंट करें</h4>
-            <p className="text-sm mb-6">नीचे दिए QR को स्कैन करके ₹{tiers[selectedTier].price} भेजें</p>
+          <div className="mt-8 p-8 border-2 border-dashed border-green-400 bg-green-50 rounded-3xl text-center">
+            <h4 className="font-semibold text-green-700 mb-4">UPI से पेमेंट करें</h4>
+            <p className="text-sm mb-6">नीचे दिए QR कोड को स्कैन करके ₹{tiers[selectedTier].price} भेजें</p>
             
             <div className="mx-auto mb-6 w-64 h-64 bg-white p-4 rounded-2xl shadow-inner">
               <img 
@@ -162,7 +159,7 @@ export default function Home() {
             </div>
 
             <p className="font-mono text-lg font-medium text-green-800 mb-2">abhisheks529@icici</p>
-            <p className="text-xs text-gray-600">भेजने के बाद स्क्रीनशॉट लेकर WhatsApp पर भेज दें। हम 10-15 मिनट में रिपोर्ट भेज देंगे।</p>
+            <p className="text-sm text-gray-600">Phone: 917838429605</p>
           </div>
         </div>
       </main>
