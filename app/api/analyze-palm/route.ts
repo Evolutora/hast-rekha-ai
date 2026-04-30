@@ -1,3 +1,4 @@
+// Version 2.0 - Forced Build Update
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { Resend } from 'resend';
