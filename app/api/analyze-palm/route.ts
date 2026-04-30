@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Image and email are required" }, { status: 400 });
     }
 
-    // Simple tier name
+    // Simple tier name handling
     let tierName = "Detailed Report";
     if (tier === 'free') tierName = "Free Overview";
     if (tier === 'premium') tierName = "Premium Report";
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 Analyze the uploaded right palm photo and give a caring, detailed reading.
 
 Structure:
-1. कुल हथेली की ऊर्जा
+1. कुल हथेली की ऊर्जा (Overall Energy)
 2. जीवन रेखा (Life Line)
 3. मस्तिष्क रेखा (Head Line)
 4. हृदय रेखा (Heart Line)
