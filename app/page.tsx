@@ -168,7 +168,7 @@ export default function Home() {
             
             <div className="bg-white p-4 rounded-2xl shadow-inner mb-6 mx-auto w-56 h-56 flex items-center justify-center border-2 border-green-100">
               <img 
-                src="/photo_6312291453748581112_x (1).jpg" 
+                src="qr.jpg" 
                 alt="UPI QR Code" 
                 className="w-full h-full object-contain"
               />
