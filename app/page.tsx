@@ -1,0 +1,247 @@
+// app/page.tsx
+'use client';
+
+import { useState, useEffect } from 'react';
+
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
+const testimonials = [
+  { name: "Priya Sharma", location: "Lucknow, UP", text: "शादी के बारे में जो prediction था, वो बिल्कुल सही निकला। बहुत clarity मिली।", rating: 5 },
+  { name: "Neha Gupta", location: "Kanpur, UP", text: "₹51 वाला package लेने के बाद gemstone suggestion ने सच में फर्क डाला।", rating: 5 },
+  { name: "Anjali Verma", location: "Patna, Bihar", text: "Detailed report बहुत personal लगा। Career और love दोनों के बारे में सही बताया।", rating: 5 },
+];
+
+export default function Home() {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [email, setEmail] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
+  const [selectedTier, setSelectedTier] = useState<'free' | 'standard' | 'premium' | 'subscription'>('standard');
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentTestimonial, setCurrentTestimonial] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+    }, 4500);
+    return () => clearInterval(interval);
+  }, []);
+
+  const tiers = {
+    free: { price: 0, name: "Free Overview", hindi: "मुफ्त ओवरव्यू", benefit: "बेसिक लाइन्स का सारांश" },
+    standard: { price: 21, name: "Detailed Report", hindi: "विस्तृत रिपोर्ट", benefit: "4 मुख्य रेखाओं का पूरा विश्लेषण + Love, Career, Marriage की जानकारी" },
+    premium: { price: 51, name: "Premium Report", hindi: "प्रीमियम रिपोर्ट", benefit: "Gemstone सलाह + शादी और प्रेम संबंधी विस्तृत भविष्यवाणी" },
+    subscription: { price: 121, name: "Monthly Membership", hindi: "मासिक सदस्यता", benefit: "हर महीने 5 लोगों तक Detailed Report" }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handlePayment = async () => {
+    if (!selectedFile) {
+      alert('कृपया अपनी हथेली की फोटो अपलोड करें');
+      return;
+    }
+    if (!email || !whatsapp) {
+      alert('कृपया ईमेल और व्हाट्सएप नंबर दोनों भरें');
+      return;
+    }
+
+    setIsLoading(true);
+
+    if (selectedTier === 'free') {
+      // Free tier - direct AI call
+      try {
+        const analyzeRes = await fetch('/api/analyze-palm', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            imageUrl: preview,
+            email: email,
+            whatsapp: whatsapp,
+            tier: 'free'
+          }),
+        });
+
+        const analyzeData = await analyzeRes.json();
+
+        if (analyzeData.success) {
+          alert('🎉 आपकी Free Overview रिपोर्ट ईमेल पर भेज दी गई है!');
+        } else {
+          alert('रिपोर्ट बनाने में समस्या हुई।');
+        }
+      } catch (error) {
+        alert('AI विश्लेषण में समस्या हुई');
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    // Paid tiers
+    try {
+      const amount = tiers[selectedTier].price * 100;
+
+      const res = await fetch('/api/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success || !data.orderId) {
+        alert('पेमेंट ऑर्डर बनाने में समस्या हुई।');
+        setIsLoading(false);
+        return;
+      }
+
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: amount,
+        currency: "INR",
+        name: "HastRekha Expert",
+        description: tiers[selectedTier].name,
+        order_id: data.orderId,
+        handler: async function (response: any) {
+          alert('✅ पेमेंट सफल! रिपोर्ट तैयार हो रही है...');
+
+          try {
+            const analyzeRes = await fetch('/api/analyze-palm', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                imageUrl: preview,
+                email,
+                whatsapp,
+                tier: selectedTier
+              }),
+            });
+
+            const analyzeData = await analyzeRes.json();
+
+            if (analyzeData.success) {
+              alert(`🎉 आपकी ${tiers[selectedTier].name} ईमेल पर भेज दी गई है!`);
+            }
+          } catch (error) {
+            alert('AI विश्लेषण में समस्या हुई');
+          }
+        },
+        prefill: { email, contact: whatsapp },
+        theme: { color: "#e11d48" },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (error) {
+      alert('कुछ गलत हुआ। कृपया दोबारा प्रयास करें।');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 to-rose-50 font-sans">
+      <header className="bg-white border-b border-rose-100 sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-6 py-5 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-rose-600 to-pink-600 rounded-2xl flex items-center justify-center text-white text-3xl">✋</div>
+            <div>
+              <h1 className="text-3xl font-semibold tracking-tight">HastRekha Expert</h1>
+              <p className="text-sm text-rose-600">हस्त रेखा विशेषज्ञ • उत्तर भारत</p>
+            </div>
+          </div>
+          <div className="text-sm text-zinc-500">12,000+ महिलाओं का भरोसा</div>
+        </div>
+      </header>
+
+      <main className="max-w-6xl mx-auto px-6 py-12">
+        <div className="text-center mb-16">
+          <h2 className="text-5xl md:text-6xl font-semibold leading-tight mb-6 text-gray-900">
+            अपनी हथेली में छुपी<br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-600 to-pink-600">अपनी कहानी</span> जानिए
+          </h2>
+          <p className="text-xl text-gray-600">Love • शादी • Career • भविष्य</p>
+        </div>
+
+        {/* Pricing Tiers */}
+        <div className="grid md:grid-cols-4 gap-6 mb-20">
+          {Object.entries(tiers).map(([key, tier]) => (
+            <div 
+              key={key}
+              onClick={() => setSelectedTier(key as any)}
+              className={`bg-white rounded-3xl p-8 cursor-pointer transition-all border ${selectedTier === key ? 'border-rose-600 shadow-xl scale-105' : 'border-gray-200 hover:border-rose-300'}`}
+            >
+              <h3 className="text-xl font-semibold mb-1">{tier.name}</h3>
+              <p className="text-4xl font-bold text-rose-600 mb-6">₹{tier.price}</p>
+              <p className="text-sm text-gray-600 mb-8">{tier.hindi}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Upload Section */}
+        <div className="max-w-2xl mx-auto bg-white rounded-3xl shadow-2xl p-10">
+          <div className="text-center mb-10">
+            <h3 className="text-3xl font-semibold mb-3">अपनी हथेली अपलोड करें</h3>
+            <p className="text-gray-600">साफ फोटो अपलोड करें और अपनी रिपोर्ट पाएं</p>
+          </div>
+
+          {preview && (
+            <div className="mb-8 rounded-2xl overflow-hidden border border-rose-200">
+              <img src={preview} alt="Palm" className="w-full" />
+            </div>
+          )}
+
+          <label className="block mb-8">
+            <div className="border-2 border-dashed border-rose-300 hover:border-rose-500 rounded-3xl p-12 text-center cursor-pointer">
+              <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+              <p className="text-5xl mb-4">📸</p>
+              <p className="font-medium">दाहिने हाथ की साफ फोटो अपलोड करें</p>
+            </div>
+          </label>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <input
+              type="email"
+              placeholder="आपका ईमेल एड्रेस"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="px-5 py-4 border border-gray-300 rounded-2xl focus:outline-none focus:border-rose-500"
+            />
+            <input
+              type="tel"
+              placeholder="WhatsApp नंबर (10 अंक)"
+              value={whatsapp}
+              onChange={(e) => setWhatsapp(e.target.value)}
+              maxLength={10}
+              className="px-5 py-4 border border-gray-300 rounded-2xl focus:outline-none focus:border-rose-500"
+            />
+          </div>
+
+          <button
+            onClick={handlePayment}
+            disabled={!selectedFile || !email || !whatsapp || isLoading}
+            className="w-full bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white font-semibold py-5 rounded-2xl text-lg transition-all disabled:opacity-50"
+          >
+            {isLoading ? 'प्रोसेस हो रहा है...' : `${tiers[selectedTier].name} लें - ₹${tiers[selectedTier].price}`}
+          </button>
+        </div>
+      </main>
+
+      <footer className="bg-zinc-900 text-zinc-400 py-12 text-center text-sm">
+        HastRekha Expert © 2026 • उत्तर भारत के लिए • मनोरंजन के लिए मात्र
+      </footer>
+    </div>
+  );
+}
